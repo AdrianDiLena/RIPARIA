@@ -7,7 +7,7 @@ import ds18x20
 
 led = machine.Pin(2, machine.Pin.OUT) # built-in LED for testing
 
-# DS18x20 Temperature Sensors
+# Setting up ONEWIRE for DS18x20 Temperature Sensors
 
 pin = machine.Pin(5, machine.Pin.IN)
 wire = onewire.OneWire(pin)
