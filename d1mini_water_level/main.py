@@ -49,11 +49,15 @@ def main():
         threshold_count += 1
       else:
         threshold_count = 0
-      if threshold_count >= threshold:
-        #client.publish('RIPARIA_lights', 'circ_off')
-        utime.sleep(1)
-        #client.publish('RIPARIA_lights', 'circ_on')
-      client.publish('RIPARIA_wLevel', str(distance)+'cm') 
+      if threshold_count >= threshold:                    # If 8 readings over threshold 
+        client.publish('RIPARIA_lights', 'circ_off')      # MQTT msg to turn on pump
+        while True: 
+          client.publish('RIPARIA_wLevel', str(distance)) # Publish distance reading in this while loop
+          if distance_cm() < 12:                          # Keep pump on until 2 cm over threshold
+            client.publish('RIPARIA_lights', 'circ_on')   # MQTT msg to turn off pump
+            break                                         # Exit refill loop, return to counter
+
+      client.publish('RIPARIA_wLevel', str(distance)) 
         
   except KeyboardInterrupt:
             pass
