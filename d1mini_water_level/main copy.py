@@ -16,7 +16,6 @@ pump.on() # for some reason on is off/off is on. This is just to ensure that the
 client = MQTTClient('124748937892378493273655', '192.168.2.67') #unique id, umqtt broker ip
 client.connect()
 
-
 def send_pulse_and_wait(echo_timeout_us=500*2*30):
         trig.value(0) # Stabilize the sensor
         time.sleep_us(5)
@@ -37,6 +36,7 @@ def distance_cm():
         return cms
  
 def main():
+  # I think there is a problem here where the code is counting each time the sensor
   threshold_count = 0
   threshold = 8 # Number of consecutive readings needed to trigger pump pin. 
   distance_threshold = 14 # distance in cm / adjust as needed.

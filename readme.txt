@@ -11,6 +11,8 @@ to communicate with the Pi.
 
 Future Plans: 
 - Adding stepper motor actuated valves to the plumbing
+- Adding a Normally Closed solenoid valve to cut flow in case
+  of a power out.
 - flow-rate sensor
 - ph sensor
 - Adding a WS2812b strips to the canopy for mood light and

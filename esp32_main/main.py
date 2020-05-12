@@ -3,6 +3,8 @@ import utime
 import dht
 import onewire
 import ds18x20
+import webrepl
+import lights
 
 
 led = machine.Pin(2, machine.Pin.OUT) # built-in LED for testing
@@ -28,48 +30,46 @@ relay6 = machine.Pin(27, machine.Pin.OUT) # Air Pump
 relay7 = machine.Pin(14, machine.Pin.OUT) # Co2 Solenoid
 relay8 = machine.Pin(13, machine.Pin.OUT) # Circulation Pump 
 
-
-
 # LIGHTS
-# Scheduled via Node-Red MQTT Topic 'RIPARIA_lights'
+# Scheduled via Node-Red MQTT Topic 'RIPARIA/lights/
 
-def sub_cb(topic, msg):
+def sub_cb(topic, int):
     print((topic, msg))
-    if topic == b'RIPARIA_lights' and msg == b'blue_on':
+    if topic == b'RIPARIA/relays/lights/blue' and msg == b'on':
+        relay1.off()      # This model of ESP32 board has on/off gpio reversed for some reason. 
+    elif topic == b'RIPARIA/relays/lights/blue' and msg == b'off':
         relay1.on()
-    elif topic == b'RIPARIA_lights' and msg == b'blue_off':
-        relay1.off()
-    if topic == b'RIPARIA_lights' and msg == b'red_on':
-        relay2.on()
-    elif topic == b'RIPARIA_lights' and msg == b'red_off':
+    if topic == b'RIPARIA/relays/lights/red' and msg == b'on':
         relay2.off()
-    if topic == b'RIPARIA_lights' and msg == b'white_on':
-        relay3.on()
-    elif topic == b'RIPARIA_lights' and msg == b'white_off':
+    elif topic == b'RIPARIA/relays/lights/red' and msg == b'off':
+        relay2.on()
+    if topic == b'RIPARIA/relays/lights/white' and msg == b'on':
         relay3.off()
-    if topic == b'RIPARIA_lights' and msg == b'sump_on':
-        relay4.on()
-    elif topic == b'RIPARIA_lights' and msg == b'sump_off':
+    elif topic == b'RIPARIA/relays/lights/white' and msg == b'off':
+        relay3.on()
+    if topic == b'RIPARIA/relays/lights/sump' and msg == b'on':
         relay4.off()
-    if topic == b'RIPARIA_lights' and msg == b'night_on':
-        relay5.on()
-    elif topic == b'RIPARIA_lights' and msg == b'night_off':
+    elif topic == b'RIPARIA/relays/lights/sump' and msg == b'off':
+        relay4.on()
+    if topic == b'RIPARIA/relays/lights/night' and msg == b'on':
         relay5.off()
+    elif topic == b'RIPARIA/relays/lights/night' and msg == b'off':
+        relay5.on()
 
     # OTHER SCHEDULED THINGS:
 
-    if topic == b'RIPARIA_lights' and msg == b'air_on':
-        relay6.on()
-    elif topic == b'RIPARIA_lights' and msg == b'air_off':
+    if topic == b'RIPARIA/relays/system/airpump' and msg == b'on':
         relay6.off()
-    if topic == b'RIPARIA_lights' and msg == b'co2_on':
-        relay7.on()
-    elif topic == b'RIPARIA_lights' and msg == b'co2_off':
+    elif topic == b'RIPARIA/relays/system/airpump' and msg == b'off':
+        relay6.on()
+    if topic == b'RIPARIA/relays/system/co2' and msg == b'on':
         relay7.off()
-    if topic == b'RIPARIA_lights' and msg == b'circ_on':
-        relay8.on()
-    elif topic == b'RIPARIA_lights' and msg == b'circ_off':
+    elif topic == b'RIPARIA/relays/system/co2' and msg == b'off':
+        relay7.on()
+    if topic == b'RIPARIA/relays/system/waterpump' and msg == b'on':
         relay8.off()
+    elif topic == b'RIPARIA/relays/system/waterpump' and msg == b'off':
+        relay8.on()
 
 def connect_and_subscribe():
     global client_id, mqtt_server, topic_sub
@@ -77,7 +77,7 @@ def connect_and_subscribe():
     client.set_callback(sub_cb)
     client.connect()
     client.subscribe(topic_sub)
-    print('Connected to %s MQTT broker, subscribed to %s topic' % (mqtt_server, topic_sub))
+    print('Connected to: %s \nSubscribed to: %s' % (mqtt_server, topic_sub))
     return client
 
 def restart_and_reconnect():
@@ -95,16 +95,20 @@ while True:
     ds.convert_temp()
     time.sleep_ms(1000) # 750ms delay is required for the ds18x20 probe. Compensated for elsewhere. 
     temp = ds.read_temp(addr)
+    espTemp = (esp32.raw_temperature()-32)*5/9
+
     d.measure()
-    client.publish('RIPARIA_air_temp', str(d.temperature())) # publishes temp to mqtt broker
-    client.publish('RIPARIA_humidity', str(d.humidity())) # publishes temp to mqtt broker
-    client.publish('RIPARIA_temp_tank', str(temp))
-    client.publish('RIPARIA_box_temp', str(esp32.raw_temperature()))
-   # client.publish('RIPARIA_temp_sump', str(temp))
-   # client.publish('RIPARIA_flow_meter', str(d.humidity()))
-   # utime.sleep_ms(2000)
+    client.publish('RIPARIA/system/airtemp', str("%.2f" % d.temperature())) # publishes temp to mqtt broker
+    client.publish('RIPARIA/system/humidity', str("%.2f" % d.humidity())) # publishes temp to mqtt broker
+    client.publish('RIPARIA/system/tanktemp', str("%.2f" % temp))
+    client.publish('RIPARIA/system/esp32temp', str("%.2f" % espTemp))
 
-
+    # Debugging & Terminal prints
+    print('Air Temperature:     ' + str("%.2f" % d.temperature()) + 'C')
+    print('Relative Humidity:   ' + str("%.2f" % d.humidity()) + '%')
+    print('Water Temperature:   ' + str("%.2f" % temp) + 'C')
+    print('ESP32 Board Temp:    ' + str("%.2f" % espTemp) + 'C')
+    print('---------------------------------')
 
     try:
         client.check_msg()
