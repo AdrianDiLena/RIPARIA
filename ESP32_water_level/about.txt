@@ -1,0 +1,32 @@
+Tested on ESP32 Generic NodeMCU style dev board.
+
+Water Level Sensor
+
+After 8 consecutive readings over the threshold, you can trigger an action. 
+This cuts down on the wacky readings from the ultrasonic sensor causing false positives.
+
+In this case, the action that is triggered is publishing a message to an MQTT topic
+and turning on a pump controlled by MainLand ESP32. This pump will fill the reservoir 
+until the HC-SR04 sensor stops registering low water levels. at which it will 
+publish another message to the same MQTT topic and turn off the pump.* 
+
+Line 37 of main.py:
+
+  threshold_count = 0  # Leave this at 0 - it is the counter.
+  threshold = 8 # Number of consecutive events required to trigger action 
+  distance_threshold = 14 # Distance threshold that triggers the count towards an action.
+
+Line 57 of main.py:
+
+  if distance_cm() < 12: # Distance that needs to register in order to turn off pump.
+
+FIX:
+The high water mark should have its own counter. The sensor will also give false positives
+below the threshold and trigger the pump to stop. But it seems like the pump turns on 
+immediately again until the desired high water mark is truly reset by multiple readings. 
+Its sloppy but it works. 
+
+
+* This is highly speculative. 
+
+

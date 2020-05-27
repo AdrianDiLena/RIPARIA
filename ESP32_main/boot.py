@@ -11,7 +11,7 @@ gc.collect()
 # Relevant Personal Keys
 ssid = 'VIRGIN930'
 password = '6AF7AD59'
-client_id = '756345364758574'
+client_id = '7563411111158574'
 mqtt_server = '192.168.2.67'
 topic_sub = b'RIPARIA/relays/#'
 

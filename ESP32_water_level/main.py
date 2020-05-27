@@ -4,13 +4,12 @@ import machine
 import time
 import utime
 
-pump = machine.Pin(2, machine.Pin.OUT) # Builtin LED for testing. 
-trig = Pin(4,Pin.OUT, pull=None) #D2 on D1 Mini
-echo = Pin(5, Pin.IN, pull=None) #D1 on D1 Mini
-trig.value(0)
-echo.value(0)
 
-pump.on() # for some reason on is off/off is on. This is just to ensure that the pin is indeed low. 
+led = machine.Pin(2, machine.Pin.OUT) # Builtin LED for testing. 
+trig = Pin(16,Pin.OUT, pull=None) 
+echo = Pin(17, Pin.IN, pull=None) 
+trig.value(0)
+echo.value(0) 
 
 #UMQTT setup
 client = MQTTClient('124748937892378493273655', '192.168.2.67') #unique id, umqtt broker ip
@@ -36,30 +35,34 @@ def distance_cm():
         return cms
  
 def main():
-  # I think there is a problem here where the code is counting each time the sensor
   threshold_count = 0
   threshold = 8 # Number of consecutive readings needed to trigger pump pin. 
   distance_threshold = 14 # distance in cm / adjust as needed.
+  
   try:
     while True:
-      utime.sleep_ms(1000) # Time between readings.
+      utime.sleep_ms(5000) # Time between readings.
       distance = distance_cm()
-      print(distance)
+      print('Distance: ' + str("%.2f" % distance) + ' cm // Count: ' + str(threshold_count))
       if distance > distance_threshold:
         threshold_count += 1
       else:
         threshold_count = 0
       if threshold_count >= threshold: 
-        print('over')                   # If 8 readings over threshold 
-        while True: 
-          client.publish('RIPARIA/relays/system/waterpump', 'on')  
-          utime.sleep_ms(2000)    # MQTT msg to turn on pump
+        print('\nCommencing Refill\n')
+        client.publish('RIPARIA/relays/system/waterpump', 'on')  
+        led.on()                 # If 8 readings over threshold 
+        while True:   
+          utime.sleep_ms(1000)     #MQTT msg to turn on pump
           client.publish('RIPARIA/system/reservoirLevel', str(distance)) # Publish distance reading in this while loop
-          print(distance_cm())
-          if distance_cm() < 12:                          # Keep pump on until 2 cm over threshold
+          print('Distance: ' + str("%.2f" % distance_cm()) + ' // Count: ' + str(threshold_count) + ' - Refilling...')
+          if distance_cm() > 12:                          
+            continue
+          else:
             client.publish('RIPARIA/relays/system/waterpump', 'off')
-            print('done')   # MQTT msg to turn off pump
-            break                                         # Exit refill loop, return to counter
+            led.off()
+            print('\nRefill Complete \nYou are Welcome.\n')   # MQTT msg to turn off pump
+            break
 
       client.publish('RIPARIA/system/reservoirLevel', str(distance)) 
         

@@ -4,23 +4,23 @@ import dht
 import onewire
 import ds18x20
 import webrepl
-import lights
 
+# FIX:
+# I think my DHT22 sensor needs to be rewired or replaced - it is throwing up errors.
+# I've commented out the lines that call on the dht functions.
 
 led = machine.Pin(2, machine.Pin.OUT) # built-in LED for testing
 
 # Setting up ONEWIRE for DS18x20 Temperature Sensors
-
 pin = machine.Pin(5, machine.Pin.IN)
 wire = onewire.OneWire(pin)
 ds = ds18x20.DS18X20(wire)
 
-# DHT22 Temperature Sensor
-
+# DHT22 TEMPERATURE SENSOR
 d = dht.DHT22(machine.Pin(4, machine.Pin.IN, machine.Pin.PULL_UP))
 
-# 8 Channel Relay Assignments
 
+# RELAY PIN ASSIGNMENTS
 relay1 = machine.Pin(22, machine.Pin.OUT) # Lights: blue
 relay2 = machine.Pin(32, machine.Pin.OUT) # Lights: red
 relay3 = machine.Pin(33, machine.Pin.OUT) # Lights: white 
@@ -30,13 +30,24 @@ relay6 = machine.Pin(27, machine.Pin.OUT) # Air Pump
 relay7 = machine.Pin(14, machine.Pin.OUT) # Co2 Solenoid
 relay8 = machine.Pin(13, machine.Pin.OUT) # Circulation Pump 
 
-# LIGHTS
-# Scheduled via Node-Red MQTT Topic 'RIPARIA/lights/
+"""
+# EXPERIMENTAL / Adding relays to a list
+# Turning off all relays on boot.
+relays = [relay1, relay2, relay3, relay4, relay5, relay6, relay7, relay8 ]
+for i in relays[:]:
+    i.on()
+"""
 
-def sub_cb(topic, int):
+
+# LIGHTS
+# Scheduled via Node-Red MQTT Topic 'RIPARIA/relays/#
+
+# There HAS got to be a better way to do this.
+# This seems very cumbersome. Is it cheating to 
+def sub_cb(topic, msg):
     print((topic, msg))
     if topic == b'RIPARIA/relays/lights/blue' and msg == b'on':
-        relay1.off()      # This model of ESP32 board has on/off gpio reversed for some reason. 
+        relay1.off()      
     elif topic == b'RIPARIA/relays/lights/blue' and msg == b'off':
         relay1.on()
     if topic == b'RIPARIA/relays/lights/red' and msg == b'on':
@@ -97,18 +108,19 @@ while True:
     temp = ds.read_temp(addr)
     espTemp = (esp32.raw_temperature()-32)*5/9
 
-    d.measure()
-    client.publish('RIPARIA/system/airtemp', str("%.2f" % d.temperature())) # publishes temp to mqtt broker
-    client.publish('RIPARIA/system/humidity', str("%.2f" % d.humidity())) # publishes temp to mqtt broker
+    #d.measure()
+    #client.publish('RIPARIA/system/airtemp', str("%.2f" % d.temperature())) # publishes temp to mqtt broker
+    #client.publish('RIPARIA/system/humidity', str("%.2f" % d.humidity())) # publishes temp to mqtt broker
     client.publish('RIPARIA/system/tanktemp', str("%.2f" % temp))
     client.publish('RIPARIA/system/esp32temp', str("%.2f" % espTemp))
 
     # Debugging & Terminal prints
-    print('Air Temperature:     ' + str("%.2f" % d.temperature()) + 'C')
-    print('Relative Humidity:   ' + str("%.2f" % d.humidity()) + '%')
+    #print('Air Temperature:     ' + str("%.2f" % d.temperature()) + 'C')
+    #print('Relative Humidity:   ' + str("%.2f" % d.humidity()) + '%')
     print('Water Temperature:   ' + str("%.2f" % temp) + 'C')
     print('ESP32 Board Temp:    ' + str("%.2f" % espTemp) + 'C')
     print('---------------------------------')
+
 
     try:
         client.check_msg()

@@ -4,6 +4,7 @@ import machine
 import micropython
 import network
 import esp
+import webrepl
 
 import gc
 gc.collect()
@@ -22,14 +23,9 @@ station.connect(ssid, password)
 while station.isconnected() == False:
   pass
 
-print(station.ifconfig())
+print('\nRIPARIA - Water Marks:\nMeasure water levels and\nrefill aquarium sump with Mqtt\n')
 
-print('\n')
-print('Welcome to Riparia')
-print('Networked Aquarium System')
-print('Adrian DiLena')
-print('22.04.2020')
-print('Water Level Sensor and Refill // D1 Mini ESP8266')
-print('\n')
-print('"Another flaw in the human character\nis that everyone wants to build and no one\nwants to do maintenance"\n- Kurt Vonnegut')
+print(station.ifconfig())
+webrepl.start()
+print('...............................')
 
